@@ -23,7 +23,6 @@ export const TodoItem: React.FC<Props> = ({
   onChangeHandler,
   setInEdition,
   setEditingTitle,
-  getEditionKeyDownHandler,
   getEditionTitleHandler,
   getDeleteHandler,
 }) => {
@@ -51,7 +50,12 @@ export const TodoItem: React.FC<Props> = ({
           {todo.title}
         </span>
       ) : (
-        <form onSubmit={e => e.preventDefault()}>
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            getEditionTitleHandler(todo.id);
+          }}
+        >
           <input
             data-cy="TodoTitleField"
             type="text"
@@ -59,8 +63,17 @@ export const TodoItem: React.FC<Props> = ({
             placeholder="Empty todo will be deleted"
             value={editingTitle}
             onChange={e => setEditingTitle(e.target.value)}
-            onKeyDown={getEditionKeyDownHandler}
-            onBlur={() => getEditionTitleHandler(todo.id)}
+            onKeyDown={e => {
+              if (e.key === 'Escape') {
+                setInEdition(null);
+                setEditingTitle('');
+              }
+            }}
+            onBlur={() => {
+              if (!loader.includes(todo.id)) {
+                getEditionTitleHandler(todo.id);
+              }
+            }}
             autoFocus
           />
         </form>

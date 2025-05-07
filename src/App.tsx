@@ -129,7 +129,9 @@ export const App: React.FC = () => {
     (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key === 'Enter') {
         event.preventDefault();
-        event.currentTarget.blur();
+        const target = event.currentTarget;
+
+        setTimeout(() => target.focus(), 0);
       } else if (event.key === 'Escape') {
         setInEdition(null);
         setEditingTitle('');
@@ -171,40 +173,51 @@ export const App: React.FC = () => {
   const getEditionTitleHandler = useCallback(
     (id: number) => {
       const title = editingTitle.trim();
+      const todo = todos.find(t => t.id === id);
 
       if (!title) {
+        // Se o título estiver vazio, deleta o todo
         setErrorHandle('Title should not be empty');
-        getDeleteHandler(id);
+        setLoader(prev => [...prev, id]);
+
+        deleteTodo(id)
+          .then(() => {
+            setTodos(prev => prev.filter(t => t.id !== id));
+          })
+          .catch(() => {
+            setErrorHandle('Unable to delete a todo');
+          })
+          .finally(() => {
+            setLoader(prev => prev.filter(num => num !== id));
+          });
 
         return;
       }
 
-      const todoToUpdate = todos.find(todo => todo.id === id);
-
-      if (title === todoToUpdate?.title) {
+      if (title === todo?.title) {
+        // Se o título não mudou, apenas fecha o formulário
         setInEdition(null);
         setEditingTitle('');
 
         return;
       }
 
+      // Atualiza o todo
       setLoader(prev => [...prev, id]);
       titleUpdate(id, title)
-        .then(() => {
-          setTodos(prev =>
-            prev.map(todo => (todo.id === id ? { ...todo, title } : todo)),
-          );
+        .then(updatedTodo => {
+          setTodos(prev => prev.map(t => (t.id === id ? updatedTodo : t)));
+          setInEdition(null);
+          setEditingTitle('');
         })
         .catch(() => {
           setErrorHandle('Unable to update a todo');
         })
         .finally(() => {
           setLoader(prev => prev.filter(num => num !== id));
-          setInEdition(null);
-          setEditingTitle('');
         });
     },
-    [editingTitle, todos, setErrorHandle, getDeleteHandler],
+    [editingTitle, todos, setErrorHandle],
   );
 
   const getTodosHandler = useCallback(() => {
